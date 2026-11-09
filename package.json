@@ -2,7 +2,7 @@
   "name": "math-vs-lottery",
   "private": true,
   "type": "module",
-  "description": "Math vs. Lottery — Thai lottery statistics web app (Google Apps Script + Sheets)",
+  "description": "Math vs. Lottery \u2014 Thai lottery statistics web app (Google Apps Script + Sheets)",
   "scripts": {
     "check": "node tools/check.mjs",
     "test": "node tools/check.mjs && node tools/test-masterkey.mjs",
@@ -13,7 +13,9 @@
     "pull": "clasp pull"
   },
   "devDependencies": {
-    "@google/clasp": "^2.4.2"
+    "@google/clasp": "2.4.2"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }

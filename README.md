@@ -39,3 +39,20 @@ Forgot the key? Run `startMasterKeySetup()` again (only the Google account owner
 | `npm run backup` | Master Key → full copy of every Sheet tab into `backups/` (git-ignored) |
 
 GitHub runs `check` + the Master Key test on every push.
+
+## 🚀 Auto-deploy (every update to `src/` goes live by itself)
+
+`.github/workflows/deploy.yml` runs on every push to `main` that changes `src/`:
+checks + Master Key test → **safety check** (downloads the live project; stops,
+changing nothing, if it has a file the repo doesn't or different
+`appsscript.json` settings) → `clasp push` → updates the **same** `/exec` deployment.
+
+It needs 2 repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `CLASPRC_JSON` | the whole text of `.clasprc.json` made by `npx @google/clasp@2.4.2 login` |
+| `MVL_MASTER_KEY` | the Master Key |
+
+Without them the workflow just says "Auto-deploy is off". Run it by hand: Actions → deploy → Run workflow.
+Rollback: revert the bad commit on GitHub → it deploys the old code by itself.

@@ -1,0 +1,55 @@
+# Every update to src/ on main goes live by itself on the SAME /exec link,
+# but only after the checks + Master Key test pass and the live project
+# matches the repo (tools/deploy.mjs stops otherwise, changing nothing).
+# Needs 2 repository secrets: CLASPRC_JSON (Google sign-in from
+# "npx @google/clasp@2.4.2 login") and MVL_MASTER_KEY (the Master Key).
+name: deploy
+on:
+  push:
+    branches: [main]
+    paths: ['src/**']
+  workflow_dispatch:
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Secrets present?
+        id: ready
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          MVL_MASTER_KEY: ${{ secrets.MVL_MASTER_KEY }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ] || [ -z "$MVL_MASTER_KEY" ]; then
+            echo "::notice::Auto-deploy is off: add the CLASPRC_JSON and MVL_MASTER_KEY secrets to turn it on."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.ready.outputs.ok == 'true'
+        with:
+          node-version: 20
+      - name: Install clasp
+        if: steps.ready.outputs.ok == 'true'
+        run: npm install --no-audit --no-fund
+      - name: Google sign-in + unlock with the Master Key
+        if: steps.ready.outputs.ok == 'true'
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          MVL_MASTER_KEY: ${{ secrets.MVL_MASTER_KEY }}
+        run: |
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          node tools/unlock.mjs
+      - name: Check, safety check, push, deploy
+        if: steps.ready.outputs.ok == 'true'
+        env:
+          NOTE: ${{ github.event.head_commit.message || 'manual deploy' }}
+        run: node tools/deploy.mjs "$NOTE"
+      - name: Clean up sign-in
+        if: always()
+        run: rm -f "$HOME/.clasprc.json" .clasp.json .local/secrets.json
