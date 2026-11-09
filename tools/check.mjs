@@ -45,6 +45,9 @@ const patterns = [
   [/script\.google\.com\/macros\/s\/[\w-]{20,}/, 'an Apps Script /exec link'],
   [/[\w.+-]+@gmail\.com/, 'an email address'],
   [/AIza[\w-]{30,}/, 'a Google API key'],
+  [/(openById|getFolderById|getFileById)\(\s*['"][\w-]{20,}/, 'a hard-coded Google file/folder ID (use Script Properties)'],
+  [/\b(sk-[\w-]{20,}|Bearer\s+[\w.-]{20,})/, 'an API token'],
+  [/api\.line\.me[\s\S]{0,200}['"][A-Za-z0-9+/=]{100,}['"]/, 'a LINE channel token'],
 ];
 let secrets = [];
 if (existsSync(LOCAL_FILE)) {
