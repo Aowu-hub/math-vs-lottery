@@ -63,8 +63,11 @@ with sync_playwright() as p:
     check(man['display'] == 'standalone' and len(man['icons']) == 3, 'manifest: standalone app with icons')
     for ic in ['icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png']:
         check(pg.evaluate(f"fetch('{ic}').then(r=>r.ok)"), ic + ' served')
-    pg.wait_for_function('navigator.serviceWorker && navigator.serviceWorker.controller !== null || (location.reload(), false)', timeout=15000)
+    pg.evaluate("window.__sameLoad = 1")
+    pg.wait_for_function('navigator.serviceWorker && navigator.serviceWorker.controller !== null', timeout=15000)
     check(True, 'service worker installed and controlling the page')
+    pg.wait_for_timeout(1500)
+    check(pg.evaluate("window.__sameLoad === 1"), 'first visit is not reloaded when the service worker starts')
     ctx.set_offline(True)
     pg.reload()
     pg.wait_for_timeout(1500)

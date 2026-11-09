@@ -18,11 +18,13 @@
       '<button type="button" id="mvlUpdateGo" style="width:100%;min-height:50px;border:0;border-radius:14px;background:linear-gradient(135deg,#8f7bff,#f59fd6);color:#1b1240;font:700 17px Sarabun,sans-serif;cursor:pointer">⟳ อัปเดตเลย · Update now</button>' +
       '<button type="button" id="mvlUpdateLater" style="margin-top:10px;background:none;border:0;color:#b9b0e6;font:15px Sarabun,sans-serif;min-height:44px;cursor:pointer">ภายหลัง · Later</button></div>';
     document.body.appendChild(box);
-    document.getElementById('mvlUpdateGo').onclick = function () { if (reg.waiting) reg.waiting.postMessage('skip'); else location.reload(); };
+    document.getElementById('mvlUpdateGo').onclick = function () { updating = true; if (reg.waiting) reg.waiting.postMessage('skip'); else location.reload(); };
     document.getElementById('mvlUpdateLater').onclick = function () { box.remove(); };
   }
-  var reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () { if (!reloading) { reloading = true; location.reload(); } });
+  // Reload only when the person tapped "Update now" — not on the very first
+  // visit, when the new service worker simply takes over the open page.
+  var updating = false, reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () { if (updating && !reloading) { reloading = true; location.reload(); } });
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('sw.js').then(function (reg) {
       function watch(w) { w.addEventListener('statechange', function () { if (w.state === 'installed' && navigator.serviceWorker.controller) showCard(reg); }); }
