@@ -56,7 +56,7 @@ if (existsSync(LOCAL_FILE)) {
 }
 const scan = dir => readdirSync(ROOT + dir, { withFileTypes: true }).forEach(d => {
   const rel = dir + d.name;
-  if (d.isDirectory()) { if (!['.git', 'node_modules', 'backups', '.local', 'secrets'].includes(d.name)) scan(rel + '/'); return; }
+  if (d.isDirectory()) { if (!['.git', 'node_modules', 'backups', '.local', 'secrets', 'site'].includes(d.name)) scan(rel + '/'); return; }
   if (['.clasp.json'].includes(d.name) || /\.(png|jpg|xlsx)$/i.test(d.name) || rel.startsWith('tools/check.mjs')) return;
   const text = readFileSync(ROOT + rel, 'utf8');
   patterns.forEach(([re, what]) => { if (re.test(text)) problems.push(rel + ' contains ' + what); });

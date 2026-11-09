@@ -84,4 +84,12 @@ assert.equal(gas.drive.filter(f => f.name === 'Master Link.json' && !f.trashed).
 for (let i = 0; i < 5; i++) post({ api: 'ping', key: 'bad ' + i });
 assert.match(post({ api: 'ping', key: 'green tea morning walk' }).error, /Too many/); ok('5 wrong tries lock the door for 10 minutes');
 
+// 8. website door (no key) — only the page's functions
+runInContext('function generateSet() { return { jackpot: "123456" }; } function setupSheets() { return "danger"; }', g);
+const w = post({ api: 'run', fn: 'generateSet', args: [] });
+assert.equal(w.ok, true); assert.equal(w.result.jackpot, '123456'); ok('website door runs a page function without a key');
+assert.equal(post({ api: 'run', fn: 'setupSheets' }).ok, false); ok('website door refuses functions not on the list');
+assert.equal(post({ api: 'run', fn: 'masterBackup_' }).ok, false); ok('website door cannot reach the backup');
+assert.equal(post({ api: 'run', fn: 'getMathBreakdown' }).ok, false); ok('missing function answers with an error, not a crash');
+
 console.log('✅ Master Key: ' + n + ' checks passed');

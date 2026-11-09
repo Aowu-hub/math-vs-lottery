@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a1f7a"/>
+      <stop offset="1" stop-color="#0b0a24"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe7a3"/>
+      <stop offset="1" stop-color="#f5b94a"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b9a8ff"/>
+      <stop offset="1" stop-color="#f59fd6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- roulette ring -->
+  <circle cx="256" cy="268" r="150" fill="none" stroke="url(#pink)" stroke-width="18" opacity=".9"/>
+  <g stroke="#f59fd6" stroke-width="10" stroke-linecap="round" opacity=".55">
+    <line x1="256" y1="136" x2="256" y2="162"/><line x1="256" y1="374" x2="256" y2="400"/>
+    <line x1="124" y1="268" x2="150" y2="268"/><line x1="362" y1="268" x2="388" y2="268"/>
+    <line x1="163" y1="175" x2="181" y2="193"/><line x1="331" y1="343" x2="349" y2="361"/>
+    <line x1="349" y1="175" x2="331" y2="193"/><line x1="181" y1="343" x2="163" y2="361"/>
+  </g>
+  <!-- crescent moon -->
+  <path d="M276 178a92 92 0 1 0 74 146a76 76 0 1 1 -74 -146z" fill="url(#gold)"/>
+  <!-- sparkle star -->
+  <path d="M352 86 L364 124 L402 136 L364 148 L352 186 L340 148 L302 136 L340 124 Z" fill="#fff4cf"/>
+  <circle cx="190" cy="120" r="7" fill="#fff4cf" opacity=".8"/>
+  <circle cx="420" cy="230" r="5" fill="#fff4cf" opacity=".7"/>
+  <circle cx="110" cy="390" r="6" fill="#fff4cf" opacity=".6"/>
+</svg>

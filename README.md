@@ -1,8 +1,17 @@
 # Math vs. Lottery
 
 Thai Government Lottery statistics app — Google Apps Script + Google Sheets
-web app (mobile-first). Private repo: source code + history. Users keep
-opening the same Apps Script `/exec` link.
+(mobile-first), with a public website version on GitHub Pages:
+
+| Open it | Address |
+|---|---|
+| 📱 Website / phone app (fast, installable) | **https://aowu-hub.github.io/math-vs-lottery/** |
+| Original Apps Script page | the `/exec` link (still works) |
+
+The website is the same page; its data comes from the Apps Script
+"website door" (`doPost {api:'run'}`). Nothing private is in this public
+repo: the Master Key, Google sign-in and secrets live in GitHub Secrets /
+Script Properties, and `secrets/master-link.json` is locked.
 
 | Folder / file | What it is |
 |---|---|
@@ -10,6 +19,8 @@ opening the same Apps Script `/exec` link.
 | `src/MasterKey.gs` | 🔑 Master Key: locks the private links, key-protected data door (`doPost`) |
 | `src/index.html` | The app page (roulette, results, stats, Wall of Fame) |
 | `src/master.html` | Master Key page — `…/exec?page=master` |
+| `web/` | Website extras: `google.script` shim, service worker, update card, app icon |
+| `tests/` | Website test (phone screen + fake server) and its sample data |
 | `src/appsscript.json` | Apps Script settings (Bangkok time, V8, web app "Anyone") |
 | `secrets/master-link.json` | Private links, locked with the Master Key |
 | `tools/` | `check` · `unlock` · `deploy` · `backup` · Master Key test |
@@ -40,12 +51,16 @@ Forgot the key? Run `startMasterKeySetup()` again (only the Google account owner
 
 GitHub runs `check` + the Master Key test on every push.
 
-## 🚀 Auto-deploy (every update to `src/` goes live by itself)
+## 🚀 Auto-deploy (every update goes live by itself)
 
-`.github/workflows/deploy.yml` runs on every push to `main` that changes `src/`:
-checks + Master Key test → **safety check** (downloads the live project; stops,
-changing nothing, if it has a file the repo doesn't or different
-`appsscript.json` settings) → `clasp push` → updates the **same** `/exec` deployment.
+`.github/workflows/deploy.yml` runs on every push to `main`:
+1. **Apps Script** (when `src/` changed): checks + Master Key test → **safety check**
+   (downloads the live project; stops, changing nothing, if it has a file the repo
+   doesn't or different `appsscript.json` settings) → `clasp push` → updates the
+   **same** `/exec` deployment.
+2. **Website**: `node tools/build-site.mjs` → publishes `site/` to GitHub Pages.
+   Phones get a big "🆕 New update ready" card (never while the wheel spins);
+   only changed files are downloaded.
 
 It needs 2 repository secrets (Settings → Secrets and variables → Actions):
 

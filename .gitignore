@@ -5,3 +5,5 @@
 # Data copies made by "npm run backup"
 backups/
 node_modules/
+site/
+tests/last-phone.png

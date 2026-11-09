@@ -10,9 +10,12 @@
     "push": "node tools/check.mjs && clasp push --force",
     "deploy": "node tools/deploy.mjs",
     "backup": "node tools/backup.mjs",
-    "pull": "clasp pull"
+    "pull": "clasp pull",
+    "build:site": "node tools/build-site.mjs"
   },
   "devDependencies": {
+    "@fontsource/mitr": "^5.3.0",
+    "@fontsource/sarabun": "^5.3.0",
     "@google/clasp": "2.4.2"
   },
   "engines": {

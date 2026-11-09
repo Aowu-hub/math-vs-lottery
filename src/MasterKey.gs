@@ -12,7 +12,8 @@
 // First time:  run startMasterKeySetup() in the editor → it logs a one-time
 //              setup code (30 min) and the page link (…/exec?page=master).
 // Later:       the page asks for the current Master Key to change it.
-// Data door:   POST {api:'ping'|'backup', key} to /exec (text/plain body).
+// Doors:       POST to /exec (text/plain body): {api:'run', fn, args} for the
+//              public website; {api:'ping'|'backup', key} for the owner.
 // ==========================================================================
 
 const MASTER_PROP_HASH_ = 'MASTER_KEY_HASH';
@@ -136,17 +137,31 @@ function masterWriteLinkFile_(json) {
   return true;
 }
 
-// ---- Data door: only answers with the right Master Key ----
+// ---- Doors (POST to /exec, text/plain JSON body) ----
+// 1) Website door — no key, same functions the page already calls through
+//    google.script.run (the public website on GitHub Pages uses this):
+//      {api:'run', fn:'generateSet', args:[]}
+// 2) Master Key door — owner only: {api:'ping'|'backup', key}
+const WEB_API_ = ['generateSet', 'getCurrentPeriodInfo', 'getMathBreakdown', 'getComparisonStats',
+  'getBuzzNumbers', 'getDreamDictionary', 'interpretDream', 'getHistoricalDraws', 'getDailyCacheHistory'];
+
 function doPost(e) {
   let body = {};
   try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) { body = {}; }
   let out;
   try {
-    if (!masterKeyIsSet_()) throw new Error('Master Key is not set up.');
-    if (!masterCheckKey_(body.key)) throw new Error('🔑 That Master Key is not right.');
-    if (body.api === 'ping') out = { ok: true, app: 'math-vs-lottery', at: new Date().toISOString() };
-    else if (body.api === 'backup') out = masterBackup_();
-    else throw new Error('Unknown request.');
+    if (body.api === 'run') {
+      if (WEB_API_.indexOf(body.fn) === -1) throw new Error('Unknown request.');
+      const fn = globalThis[body.fn];
+      if (typeof fn !== 'function') throw new Error('Not available: ' + body.fn);
+      out = { ok: true, result: fn.apply(null, Array.isArray(body.args) ? body.args.slice(0, 3) : []) };
+    } else {
+      if (!masterKeyIsSet_()) throw new Error('Master Key is not set up.');
+      if (!masterCheckKey_(body.key)) throw new Error('🔑 That Master Key is not right.');
+      if (body.api === 'ping') out = { ok: true, app: 'math-vs-lottery', at: new Date().toISOString() };
+      else if (body.api === 'backup') out = masterBackup_();
+      else throw new Error('Unknown request.');
+    }
   } catch (err) {
     out = { ok: false, error: String(err && err.message || err) };
   }
