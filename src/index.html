@@ -1966,7 +1966,9 @@
       requestAnimationFrame(function () { requestAnimationFrame(function () { DBG('spin on screen +' + Math.round(performance.now() - tSpin) + 'ms'); }); });
 
       try {
-        await new Promise(function (r) { requestAnimationFrame(function () { setTimeout(r, 30); }); });
+        // first spinning frame on screen before the server call (a hidden tab never
+        // runs animation frames, so a short timer is the fallback)
+        await new Promise(function (r) { requestAnimationFrame(function () { setTimeout(r, 30); }); setTimeout(r, 150); });
         const result = (await Promise.all([runGenerateSet(), wait(1400)]))[0];
         DBG('reply generate ' + (result && result.locked ? 'LOCKED' : (result && result.jackpot)) + (result && result.serverMs ? ' server ' + result.serverMs + 'ms' : ''));
         if (!(result && result.locked)) {
