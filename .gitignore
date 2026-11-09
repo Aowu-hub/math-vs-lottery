@@ -1,0 +1,7 @@
+# Unlocked secrets — made by "npm run unlock", never committed
+.clasp.json
+.clasprc.json
+.local/
+# Data copies made by "npm run backup"
+backups/
+node_modules/

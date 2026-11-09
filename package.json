@@ -1,0 +1,19 @@
+{
+  "name": "math-vs-lottery",
+  "private": true,
+  "type": "module",
+  "description": "Math vs. Lottery — Thai lottery statistics web app (Google Apps Script + Sheets)",
+  "scripts": {
+    "check": "node tools/check.mjs",
+    "test": "node tools/check.mjs && node tools/test-masterkey.mjs",
+    "unlock": "node tools/unlock.mjs",
+    "push": "node tools/check.mjs && clasp push --force",
+    "deploy": "node tools/deploy.mjs",
+    "backup": "node tools/backup.mjs",
+    "pull": "clasp pull"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  },
+  "engines": { "node": ">=18" }
+}

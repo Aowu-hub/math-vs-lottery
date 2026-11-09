@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Master Key</title>
+  <style>
+    :root {
+      --bg: #0b0a24; --card: #1a1650; --border: rgba(170, 150, 255, .28);
+      --ink: #efeaff; --muted: #b9b0e6; --accent: linear-gradient(135deg, #8f7bff, #f59fd6);
+      --ok: #8ff5c4; --bad: #ff9fb0; --gold: #ffd77a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+      font: 16px/1.55 'Sarabun', -apple-system, system-ui, sans-serif;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: max(24px, env(safe-area-inset-top)) 16px 40px;
+    }
+    .card { width: 100%; max-width: 460px; background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 26px 22px; }
+    h1 { margin: 0 0 4px; font-size: 24px; }
+    .en { display: block; color: var(--muted); font-size: 13.5px; }
+    p { margin: 10px 0; }
+    label { display: block; margin: 14px 0 6px; font-weight: 600; }
+    input {
+      width: 100%; min-height: 48px; font-size: 16px; padding: 10px 14px; border-radius: 12px;
+      border: 1px solid var(--border); background: #0f0d33; color: var(--ink);
+    }
+    input:focus { outline: 2px solid #8f7bff; outline-offset: 1px; }
+    button {
+      width: 100%; min-height: 50px; margin-top: 18px; border: 0; border-radius: 14px; cursor: pointer;
+      background: var(--accent); color: #1b1240; font: 700 17px/1.2 inherit;
+    }
+    button[disabled] { opacity: .6; cursor: wait; }
+    .msg { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.05); display: none; }
+    .msg.show { display: block; }
+    .msg.ok { color: var(--ok); } .msg.bad { color: var(--bad); }
+    .state { display: inline-block; padding: 4px 12px; border-radius: 99px; background: rgba(255,255,255,.07); color: var(--gold); font-size: 14px; }
+    .hidden { display: none; }
+    .tip { font-size: 13.5px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔑 กุญแจหลัก <span class="en">Master Key</span></h1>
+    <p><span class="state" id="state">กำลังตรวจ… · Checking…</span></p>
+    <p class="tip">กุญแจหลักล็อกลิงก์ที่พาไปถึงข้อมูลของคุณ (ลิงก์แอป, ชีต, โปรเจกต์) ใครจะสำรองข้อมูลหรือ deploy จาก GitHub ต้องพิมพ์กุญแจนี้
+      <span class="en">The Master Key locks the links that lead to your data (app link, Sheet, project). Backups and deploys from the GitHub repo need this key.</span></p>
+
+    <div id="firstBox" class="hidden">
+      <label for="code">รหัสตั้งค่า (จาก editor) <span class="en">Setup code — run startMasterKeySetup() in the editor</span></label>
+      <input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </div>
+    <div id="oldBox" class="hidden">
+      <label for="oldKey">กุญแจหลักปัจจุบัน <span class="en">Current Master Key</span></label>
+      <input id="oldKey" type="password" autocomplete="off">
+    </div>
+
+    <label for="execUrl">ลิงก์แอป (/exec) <span class="en">App link (/exec) — check it is your real public link</span></label>
+    <input id="execUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" spellcheck="false" disabled>
+
+    <label for="key1">กุญแจหลักใหม่ (3 คำขึ้นไป) <span class="en">New Master Key — 3 or more words</span></label>
+    <input id="key1" type="password" autocomplete="new-password">
+    <label for="key2">พิมพ์อีกครั้ง <span class="en">Type it again</span></label>
+    <input id="key2" type="password" autocomplete="new-password">
+
+    <button id="unlockBtn" type="button">🔓 ปลดล็อกเพื่อเริ่ม · Unlock to start</button>
+    <button id="saveBtn" type="button" class="hidden">🔒 ล็อกด้วยกุญแจหลัก · Lock with Master Key</button>
+    <div class="msg" id="msg"></div>
+    <p class="tip">⚠️ ลืมกุญแจ: เจ้าของบัญชี Google รัน startMasterKeySetup() ใน editor เพื่อตั้งใหม่ได้
+      <span class="en">Forgot it? The Google account owner can run startMasterKeySetup() in the editor to set a new one.</span></p>
+  </div>
+
+  <script>
+    var isSet = false, secrets = null;
+    function $(id) { return document.getElementById(id); }
+    function say(text, kind) { var m = $('msg'); m.textContent = text; m.className = 'msg show ' + (kind || ''); }
+    function norm(k) { return String(k || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+    function b64(buf) { return btoa(String.fromCharCode.apply(null, new Uint8Array(buf))); }
+    function proof() { return isSet ? { key: $('oldKey').value } : { code: $('code').value }; }
+    function busy(btn, on) { btn.disabled = on; }
+
+    // PBKDF2-SHA256 150k → AES-GCM 256, same format as the STEAM family key.
+    async function lock(key, data) {
+      var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 150000;
+      var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(norm(key)), 'PBKDF2', false, ['deriveKey']);
+      var k = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+      var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, k, new TextEncoder().encode(JSON.stringify(data)));
+      return { v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct), iter: iter };
+    }
+
+    google.script.run.withSuccessHandler(function (s) {
+      isSet = !!(s && s.set);
+      $('state').textContent = isSet ? '✅ ตั้งกุญแจหลักแล้ว · Master Key is set' : '— ยังไม่มีกุญแจหลัก · No Master Key yet';
+      $(isSet ? 'oldBox' : 'firstBox').classList.remove('hidden');
+    }).withFailureHandler(function (e) { say(e.message, 'bad'); }).masterStatus();
+
+    $('unlockBtn').addEventListener('click', function () {
+      var btn = this; busy(btn, true); say('กำลังตรวจ… · Checking…');
+      google.script.run.withSuccessHandler(function (d) {
+        busy(btn, false); secrets = d;
+        $('execUrl').value = d.execUrl || ''; $('execUrl').disabled = false;
+        btn.classList.add('hidden'); $('saveBtn').classList.remove('hidden');
+        say('✅ ปลดล็อกแล้ว ตรวจลิงก์แอป แล้วตั้งกุญแจหลักใหม่ · Unlocked — check the app link, then set the new Master Key.', 'ok');
+      }).withFailureHandler(function (e) { busy(btn, false); say(e.message, 'bad'); }).masterUnlock(proof());
+    });
+
+    $('saveBtn').addEventListener('click', async function () {
+      var btn = this, a = $('key1').value, b = $('key2').value, url = $('execUrl').value.trim();
+      if (norm(a) !== norm(b)) { say('✋ กุญแจสองช่องไม่ตรงกัน · The two keys are not the same.', 'bad'); return; }
+      if (norm(a).split(' ').length < 3) { say('✋ ใช้ 3 คำขึ้นไป · Pick 3 or more words — easy to type, hard to guess.', 'bad'); return; }
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) { say('✋ ลิงก์แอปต้องลงท้ายด้วย /exec · The app link must end with /exec.', 'bad'); return; }
+      var dep = url.split('/s/')[1].split('/')[0];
+      var data = { u: url, deploymentId: dep, sheetId: secrets.sheetId, sheetName: secrets.sheetName, scriptId: secrets.scriptId };
+      var link;
+      busy(btn, true);
+      try { link = await lock(a, data); } catch (e) { busy(btn, false); say('เบราว์เซอร์นี้ล็อกไม่ได้ · This browser could not lock it: ' + e.message, 'bad'); return; }
+      google.script.run.withSuccessHandler(function (r) {
+        busy(btn, false);
+        ['key1', 'key2', 'oldKey', 'code'].forEach(function (id) { $(id).value = ''; });
+        isSet = true; $('state').textContent = '✅ ตั้งกุญแจหลักแล้ว · Master Key is set'; $('firstBox').classList.add('hidden'); $('oldBox').classList.remove('hidden');
+        say('✅ บันทึกกุญแจหลักแล้ว · Master Key saved.' + (r.drive
+          ? ' ไฟล์ล็อกอยู่ใน Drive ชื่อ "Master Link.json" ข้างชีต — บอก Claude ให้ใส่ลง repo · The locked file "Master Link.json" is in Drive next to the Sheet — ask Claude to add it to the repo.'
+          : ' ⚠️ เขียน "Master Link.json" ลง Drive ไม่ได้ — รัน startMasterKeySetup() ใน editor 1 ครั้ง (อนุญาต Drive) แล้วทำใหม่ · Could not write "Master Link.json" to Drive — run startMasterKeySetup() once in the editor (allow Drive), then do this again.'), 'ok');
+      }).withFailureHandler(function (e) { busy(btn, false); say(e.message, 'bad'); }).saveMasterKey(proof(), a, link);
+    });
+  </script>
+</body>
+</html>
